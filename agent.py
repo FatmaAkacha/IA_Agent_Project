@@ -21,3 +21,4 @@ workflow.add_edge("analyse",END)
 agent = workflow.compile()
 resultat = agent.invoke(
 {"question":"Quels sont les congés annuels ?"})
+print(resultat)
