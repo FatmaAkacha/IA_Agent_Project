@@ -2,6 +2,7 @@ from typing import TypedDict
 from langgraph.graph import StateGraph, END
 from pypdf import PdfReader
 from docx import Document
+import requests
 
 
 class AgentState(TypedDict):
@@ -73,23 +74,50 @@ def calculatrice_node(state):
     return state
 
 
+def llm_local(prompt):
+    url = ("http://localhost:11434/api/generate")
+    data = {
+            "model": "phi3",
+            "prompt": prompt,
+            "stream": False
+            }
+    response = requests.post(url,json=data)
+    return response.json()["response"]
+
 def txt_reader_node(state):
     contenu = txt_reader("documents/rh.txt")
-    state["reponse"] = contenu
+    question = state["question"]
+    prompt = f"""Contexte :{contenu}
+    Question :{question}
+    Réponse :
+    """ 
+    state["reponse"] = llm_local(prompt)
     return state
 
 def pdf_reader_node(state):
-    contenu = pdf_reader("documents/formation.pdf")
-    state["reponse"] = contenu
+    contenu = pdf_reader("documents/formation.pdf" )
+    question = state["question"]
+    prompt = f""" Contexte :{contenu}
+    Question :{question}
+    Réponse :
+    """
+    state["reponse"] = llm_local(prompt)
     return state
-
 def docx_reader_node(state):
     contenu = docx_reader("documents/procedure.docx")
-    state["reponse"] = contenu
+    question = state["question"]
+    prompt = f"""Contexte :{contenu}
+    Question :{question}
+    Réponse :
+    """
+    state["reponse"] = llm_local(prompt)
     return state
 
 def documentation_node(state):
-    state["reponse"] = "Réponse documentaire."
+    question = state["question"]
+    prompt = f"""Réponds à cette question :{question}"""
+    reponse = llm_local(prompt)
+    state["reponse"] = reponse
     return state
 
 
@@ -141,10 +169,10 @@ workflow.add_edge("docx_reader", END)
 agent = workflow.compile()
 
 questions = [
-    "50+25",
     "Lis formation.pdf",
+    "Quels sujets sont étudiés ?",
     "Lis procedure.docx",
-    "Lis rh.txt"
+    "Que dit la procédure RH ?"
 ]
 
 for q in questions:
@@ -154,3 +182,8 @@ for q in questions:
 
 #print(pdf_reader("documents/formation.pdf"))
 #print(docx_reader("documents/procedure.docx"))
+
+#resultat = agent.invoke({"question":"What is Agent IA ?"})
+#print(resultat["reponse"])
+
+#print(llm_local("Bonjour"))
