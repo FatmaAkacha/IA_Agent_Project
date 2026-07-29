@@ -1,5 +1,7 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph, END
+from pypdf import PdfReader
+from docx import Document
 
 
 class AgentState(TypedDict):
@@ -20,6 +22,22 @@ def txt_reader(chemin_fichier):
     except FileNotFoundError:
         return "Fichier introuvable."
 
+def pdf_reader(chemin_fichier):
+    lecteur = PdfReader(
+    chemin_fichier)
+    contenu = ""
+    for page in lecteur.pages:
+        contenu += (page.extract_text())
+    return contenu
+
+def docx_reader(chemin_fichier):
+    doc = Document(
+    chemin_fichier)
+    contenu = ""
+    for paragraphe in doc.paragraphs:
+        contenu += (paragraphe.text + "\n")
+    return contenu
+
 def analyse_node(state):
     print("Analyse de la question...")
     return state
@@ -27,13 +45,17 @@ def analyse_node(state):
 def decision_node(state):
     question = state["question"].lower()
     if "bonjour" in question:
-        state["type_question"] = "salutation"
-    elif "+" in question or "-" in question or "*" in question or "/" in question:
-        state["type_question"] = "calcul"
-    elif "lis" in question or "lecture" in question:
-        state["type_question"] = "lecture"
+        state["type_question"] = ("salutation")
+    elif ("+" in question or "-" in question or "*" in question or "/" in question):
+        state["type_question"] = ("calcul")
+    elif ".pdf" in question:
+        state["type_question"] = ("pdf")
+    elif ".docx" in question:
+        state["type_question"] = ("docx")
+    elif ".txt" in question:
+        state["type_question"] = ("txt")
     else:
-        state["type_question"] = "documentation"
+        state["type_question"] = ("documentation")
     return state
 
 def calculatrice_node(state):
@@ -56,6 +78,15 @@ def txt_reader_node(state):
     state["reponse"] = contenu
     return state
 
+def pdf_reader_node(state):
+    contenu = pdf_reader("documents/formation.pdf")
+    state["reponse"] = contenu
+    return state
+
+def docx_reader_node(state):
+    contenu = docx_reader("documents/procedure.docx")
+    state["reponse"] = contenu
+    return state
 
 def documentation_node(state):
     state["reponse"] = "Réponse documentaire."
@@ -78,6 +109,8 @@ workflow.add_node("calculatrice", calculatrice_node)
 workflow.add_node("txt_reader", txt_reader_node)
 workflow.add_node("documentation", documentation_node)
 workflow.add_node("salutation", greeting_node)
+workflow.add_node("pdf_reader",pdf_reader_node)
+workflow.add_node("docx_reader",docx_reader_node)
 
 workflow.set_entry_point("analyse")
 
@@ -89,7 +122,9 @@ workflow.add_conditional_edges(
     {
         "salutation": "salutation",
         "calcul": "calculatrice",
-        "lecture": "txt_reader",
+        "pdf":"pdf_reader",
+        "docx":"docx_reader",
+        "txt": "txt_reader",
         "documentation": "documentation",
     },
 )
@@ -98,20 +133,24 @@ workflow.add_edge("calculatrice", END)
 workflow.add_edge("txt_reader", END)
 workflow.add_edge("documentation", END)
 workflow.add_edge("salutation", END)
+workflow.add_edge("pdf_reader", END)
+workflow.add_edge("docx_reader", END)
+
+
 
 agent = workflow.compile()
 
 questions = [
-    "Bonjour",
-    "5+5",
-    "50*4",
-    "100/2",
-    "Calcule 10+25",
-    "Lis le fichier RH",
-    "Quels sont les congés annuels ?",
+    "50+25",
+    "Lis formation.pdf",
+    "Lis procedure.docx",
+    "Lis rh.txt"
 ]
 
 for q in questions:
     resultat = agent.invoke({"question": q})
     print("\nQuestion :", q)
     print("Réponse :", resultat["reponse"])
+
+#print(pdf_reader("documents/formation.pdf"))
+#print(docx_reader("documents/procedure.docx"))
