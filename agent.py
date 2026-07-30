@@ -103,6 +103,7 @@ def llm_local(prompt):
 
     response = requests.post(url, json=data)
     return response.json()["response"]
+url = ("http://host.docker.internal:11434/api/generate")
 
 
 def txt_reader_node(state):
