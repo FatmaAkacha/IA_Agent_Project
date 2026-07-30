@@ -62,7 +62,3 @@ L'application suit les étapes suivantes :
 
 - GitHub : https://github.com/FatmaAkacha
 - LinkedIn : https://www.linkedin.com/in/fatma-akacha-66b734264/
-
-## 📄 Licence
-
-Projet réalisé dans un but pédagogique.
