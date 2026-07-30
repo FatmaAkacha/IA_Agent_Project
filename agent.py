@@ -4,8 +4,6 @@ from pypdf import PdfReader
 from docx import Document
 import requests
 import time
-
-
 class AgentState(TypedDict):
     question: str
     reponse: str
@@ -110,6 +108,7 @@ def llm_local(prompt):
 def txt_reader_node(state):
     contenu = txt_reader("documents/rh.txt")
     question = state["question"]
+    historique = state.get("historique", "")
     prompt = f"""
         Historique :{historique}
         Contexte :{contenu}
@@ -123,6 +122,7 @@ def txt_reader_node(state):
 def pdf_reader_node(state):
     contenu = pdf_reader("documents/formation.pdf")
     question = state["question"]
+    historique = state.get("historique", "")
     prompt = f"""
         Historique :{historique}
         Contexte :{contenu}
@@ -135,6 +135,7 @@ def pdf_reader_node(state):
 def docx_reader_node(state):
     contenu = docx_reader("documents/procedure.docx")
     question = state["question"]
+    historique = state.get("historique", "")
     prompt = f"""
         Historique :{historique}
         Contexte :{contenu}
@@ -146,7 +147,7 @@ def docx_reader_node(state):
 
 
 def documentation_node(state):
-    historique = state["historique"]
+    historique = state.get("historique", "")
     question = state["question"]
 
     prompt = f"""
@@ -206,44 +207,45 @@ workflow.add_edge("salutation", END)
 
 agent = workflow.compile()
 
-memoire = []
+if __name__ == "__main__":
+    memoire = []
 
-questions = [
+    questions = [
     "Quels sont les congés ?",
     "Lis formation.pdf",
     "50+20",
     "Lis procedure.docx"
-]
+    ]
 
-for question in questions:
+    for question in questions:
 
-    if question == "":
-        print("Veuillez saisir une question.")
-        continue
+        if question == "":
+            print("Veuillez saisir une question.")
+            continue
 
-    historique = "\n".join(memoire)
+        historique = "\n".join(memoire)
 
-    debut = time.time()
+        debut = time.time()
 
-    resultat = agent.invoke({
-        "question": question,
-        "historique": historique
-    })
+        resultat = agent.invoke({
+            "question": question,
+            "historique": historique
+        })
 
-    fin = time.time()
+        fin = time.time()
 
-    reponse = resultat["reponse"]
+        reponse = resultat["reponse"]
 
-    memoire.append(f"Utilisateur : {question}")
-    memoire.append(f"Assistant : {reponse}")
+        memoire.append(f"Utilisateur : {question}")
+        memoire.append(f"Assistant : {reponse}")
 
-    print(reponse)
-    print("[LOG] Réponse générée")
-    print("Temps :", fin - debut, "secondes")
-    print("-------------")
+        print(reponse)
+        print("[LOG] Réponse générée")
+        print("Temps :", fin - debut, "secondes")
+        print("-------------")
 
-    print("\nQuestion :", question)
-    print("Réponse :", resultat["reponse"])
+        print("\nQuestion :", question)
+        print("Réponse :", resultat["reponse"])
 
-    memoire.append(f"Utilisateur : {question}")
-    memoire.append(f"Assistant : {resultat['reponse']}")
+        memoire.append(f"Utilisateur : {question}")
+        memoire.append(f"Assistant : {resultat['reponse']}")
